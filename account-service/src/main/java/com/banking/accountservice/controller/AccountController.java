@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.banking.accountservice.dto.AccountResponse;
+import com.banking.accountservice.dto.CreateAccountRequest;
 import com.banking.accountservice.service.AccountService;
 
 import jakarta.validation.Valid;
@@ -29,10 +30,10 @@ public class AccountController {
 
     @PostMapping 
     public ResponseEntity<AccountResponse> createAccount(
-        @Valid @RequestBody AccountResponse accountRequest
+        @Valid @RequestBody CreateAccountRequest accountRequest
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
-        .body(accountService.createAccount(request));
+        .body(accountService.createAccount(accountRequest));
     }
 
     @GetMapping ("/{accountNumber}")
@@ -69,5 +70,21 @@ public class AccountController {
     ) {
         accountService.deductBalance(accountNumber, amount);
         return ResponseEntity.ok("Balance deducted successfully");
+    }
+
+    /**
+     * SAGA Step - 4: Compensation - Refund Balance
+     * This endpoint is called by the Transaction Service to refund the balance to the account in case
+     * During fraud detection -> refund the amount to the account (undo step 1)
+     * Transaction completed -> Credit Receiver
+     */
+
+    @PutMapping ("/{accountNumber}/creditBalance")
+    public ResponseEntity<String> creditBalance(
+        @PathVariable String accountNumber,
+        @RequestParam BigDecimal amount
+    ) {
+        accountService.creditBalance(accountNumber, amount);
+        return ResponseEntity.ok("Balance credited successfully");
     }
 }
