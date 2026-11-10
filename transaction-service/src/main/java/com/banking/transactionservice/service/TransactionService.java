@@ -1,6 +1,8 @@
 package com.banking.transactionservice.service;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -63,6 +65,19 @@ public class TransactionService {
         log.info("SAGA Step 2 - TransactionInitiatedEvent sent to Kafka for transactionId: {}", savedTransaction.getId());
 
         return mapToTransactionResponse(savedTransaction);
+    }
+
+    public TransactionResponse getTransaction(String transactionId) {
+        Transaction transaction = transactionRepository.findById(transactionId)
+            .orElseThrow(() -> new RuntimeException("Transaction not found with id: " + transactionId));
+        return mapToTransactionResponse(transaction);
+    }
+
+    public List<TransactionResponse> getTransactionHistory(String accountNumber) {
+        return transactionRepository.findBySenderAccountNumberOrderByCreatedAtDesc(accountNumber)
+            .stream()
+            .map(this::mapToTransactionResponse)
+            .collect(Collectors.toList());
     }
 
     private TransactionResponse mapToTransactionResponse(Transaction transaction) {
